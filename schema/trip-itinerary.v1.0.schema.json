@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://swetanksubham.com/trip-viewer/schema/trip-itinerary.v1.0.schema.json",
+  "title": "Trip Itinerary v1.0",
+  "description": "Schema for trip itinerary files compatible with trip_viewer.html",
+  "type": "object",
+  "required": ["version", "schema", "meta", "days", "practical_notes"],
+  "additionalProperties": false,
+
+  "properties": {
+
+    "version": {
+      "type": "string",
+      "const": "1.0",
+      "description": "Schema version. Must always be '1.0'."
+    },
+
+    "schema": {
+      "type": "string",
+      "const": "trip-itinerary",
+      "description": "Schema identifier. Must always be 'trip-itinerary'."
+    },
+
+    "meta": {
+      "type": "object",
+      "description": "Trip-level metadata shown in the viewer topbar and sidebar header.",
+      "required": ["title", "narrative", "travel_mode"],
+      "additionalProperties": false,
+      "properties": {
+
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Short trip title shown in the topbar and sidebar. e.g. 'Bochaha to Bhutan - 9 Day Road Trip'"
+        },
+
+        "subtitle": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Optional date range or tagline. e.g. 'Mar 29 - Apr 6, 2026'"
+        },
+
+        "narrative": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500,
+          "description": "1-2 sentence description of the overall trip shown below the title."
+        },
+
+        "travel_mode": {
+          "type": "string",
+          "enum": ["driving", "walking", "transit", "bicycling"],
+          "description": "Primary mode of travel. Used for route display and Google Maps links."
+        },
+
+        "group_size": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Number or range of travellers. e.g. 'solo', '2', '3-4', '10+'"
+        },
+
+        "budget": {
+          "type": "string",
+          "enum": ["budget", "mid-range", "premium", "mixed"],
+          "description": "Overall trip budget tier."
+        },
+
+        "created": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "ISO 8601 date the itinerary was created. e.g. '2026-03-29'"
+        },
+
+        "tags": {
+          "type": "array",
+          "maxItems": 6,
+          "uniqueItems": true,
+          "description": "Up to 6 short descriptor tags shown as chips in the sidebar.",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          }
+        }
+      }
+    },
+
+    "days": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered list of trip days. Each day contains one or more locations.",
+      "items": {
+        "type": "object",
+        "required": ["day_number", "title", "locations"],
+        "additionalProperties": false,
+        "properties": {
+
+          "day_number": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-indexed day number. Must be unique across all days."
+          },
+
+          "date": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              { "type": "null" }
+            ],
+            "description": "ISO 8601 calendar date for this day, or null if dates are not fixed. e.g. '2026-03-29'"
+          },
+
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Short vivid title for the day. e.g. 'Dochula Pass & Punakha Dzong'"
+          },
+
+          "narrative": {
+            "type": "string",
+            "maxLength": 400,
+            "description": "Optional 1-2 sentence description setting the scene for the day."
+          },
+
+          "locations": {
+            "type": "array",
+            "minItems": 1,
+            "description": "Ordered list of stops for this day.",
+            "items": {
+              "type": "object",
+              "required": ["name", "latitude", "longitude", "notes"],
+              "additionalProperties": false,
+              "properties": {
+
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 150,
+                  "description": "Display name of the place. e.g. 'Punakha Dzong'"
+                },
+
+                "latitude": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90,
+                  "description": "Latitude in decimal degrees. Use Google Places API precision (7 decimal places). e.g. 27.5822039"
+                },
+
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180,
+                  "description": "Longitude in decimal degrees. Use Google Places API precision (7 decimal places). e.g. 89.8630947"
+                },
+
+                "place_id": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^ChIJ[A-Za-z0-9_-]+$",
+                      "description": "Google Place ID from the Places API. Always starts with 'ChIJ'."
+                    },
+                    { "type": "null" }
+                  ],
+                  "description": "Google Place ID. Enables precise routing in Google Maps and rich popup links. Use null when unavailable."
+                },
+
+                "google_maps_url": {
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "format": "uri",
+                      "pattern": "^https://www\\.google\\.com/maps/"
+                    },
+                    { "type": "null" }
+                  ],
+                  "description": "Google Maps URL for this place. Prefer place_id form: 'https://www.google.com/maps/place/?q=place_id:ChIJ...'. Fallback: 'https://www.google.com/maps/search/?api=1&query=LAT,LON'. Use null when unavailable."
+                },
+
+                "rating": {
+                  "oneOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 5
+                    },
+                    { "type": "null" }
+                  ],
+                  "description": "Google Maps star rating (0.0 - 5.0). Use null when unavailable."
+                },
+
+                "notes": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 600,
+                  "description": "Practical insider tip for this stop shown in the sidebar and map popup. e.g. 'Arrive before 8am to beat the crowds. The wooden bridge to the entrance is stunning.'"
+                },
+
+                "arrival_time": {
+                  "type": "string",
+                  "maxLength": 30,
+                  "description": "Suggested arrival time as a human-readable string. e.g. '9:00 AM', 'Afternoon', 'Evening'"
+                },
+
+                "duration_minutes": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1440,
+                  "description": "Suggested time to spend at this stop in minutes."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "practical_notes": {
+      "type": "array",
+      "minItems": 1,
+      "description": "List of plain-text practical tips shown in the collapsible notes section of the sidebar. Minimum 1 item, recommended 3-8. Cover: entry/visa requirements, budget tips, weather/timing, local customs, transport logistics.",
+      "items": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 500
+      }
+    },
+
+    "externalData": {
+      "type": "object",
+      "description": "Optional cached data (routes, elevations, drawings) embedded by the viewer on export. Not intended for manual authoring.",
+      "additionalProperties": true
+    }
+
+  },
+
+  "examples": [
+    {
+      "version": "1.0",
+      "schema": "trip-itinerary",
+      "meta": {
+        "title": "Tokyo Weekend",
+        "subtitle": "Apr 10-11, 2026",
+        "narrative": "48 hours in Tokyo - temples in the morning, ramen at noon, nightlife after dark.",
+        "travel_mode": "transit",
+        "group_size": "2",
+        "budget": "mid-range",
+        "created": "2026-03-29",
+        "tags": ["Tokyo", "Japan", "food", "culture"]
+      },
+      "days": [
+        {
+          "day_number": 1,
+          "date": "2026-04-10",
+          "title": "Asakusa & Shibuya",
+          "narrative": "Ancient temples in the morning, neon-lit crossing at sunset.",
+          "locations": [
+            {
+              "name": "Senso-ji Temple",
+              "latitude": 35.7148,
+              "longitude": 139.7967,
+              "place_id": "ChIJ8T1GpMGOGGARDYGSgpooDWw",
+              "google_maps_url": "https://www.google.com/maps/place/?q=place_id:ChIJ8T1GpMGOGGARDYGSgpooDWw",
+              "rating": 4.6,
+              "notes": "Arrive before 8am to beat the crowds. The Nakamise shopping street opens at 10am.",
+              "arrival_time": "7:30 AM",
+              "duration_minutes": 90
+            }
+          ]
+        }
+      ],
+      "practical_notes": [
+        "No visa required for Indian nationals for stays under 90 days.",
+        "IC Card (Suica/Pasmo) covers all trains and buses - load at the airport kiosk.",
+        "April is cherry blossom season - book accommodation 2-3 months in advance.",
+        "Cash is still essential in Japan outside major tourist areas - carry at least 10,000 JPY daily."
+      ]
+    }
+  ]
+}
